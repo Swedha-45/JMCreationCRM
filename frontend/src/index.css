@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0B0F19;
+  --color-surface: #111827;
+  --color-primary: #14B8A6;
+  --color-accent: #6366F1;
+  --color-border: #1F2937;
+}
+
+body {
+  background-color: var(--color-background);
+  color: #E2E8F0;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: white;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1F2937;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #14B8A6;
+}
+
+/* =========================================
+   FullCalendar v7 Dark Theme Overrides
+   ========================================= */
+
+@layer utilities {
+
+  /* Main Calendar Wrapper */
+  .fc {
+    --fc-border-color: #1F2937 !important;
+    --fc-page-bg-color: #0B0F19 !important;
+    --fc-neutral-bg-color: #111827 !important;
+    --fc-list-event-hover-bg-color: #1F2937 !important;
+    --fc-today-bg-color: rgba(20, 184, 166, 0.1) !important;
+    --fc-event-text-color: #fff !important;
+
+    color: #E2E8F0 !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+
+  /* Table Headers & Cells */
+  .fc-theme-standard td,
+  .fc-theme-standard th {
+    border-color: #1F2937 !important;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    color: #9CA3AF !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    padding: 10px 0 !important;
+    text-decoration: none !important;
+  }
+
+  /* Day Numbers */
+  .fc .fc-daygrid-day-number,
+  .fc .fc-timegrid-slot-label-cushion {
+    color: #E2E8F0 !important;
+    text-decoration: none !important;
+    font-size: 0.875rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Buttons */
+  .fc .fc-button-primary {
+    background-color: #111827 !important;
+    border-color: #1F2937 !important;
+    color: #E2E8F0 !important;
+    text-transform: capitalize !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+  }
+
+  .fc .fc-button-primary:hover {
+    background-color: #1F2937 !important;
+    border-color: #374151 !important;
+  }
+
+  .fc .fc-button-active {
+    background-color: #14B8A6 !important;
+    border-color: #14B8A6 !important;
+    color: #fff !important;
+  }
+
+  .fc .fc-button-primary:disabled {
+    background-color: #1F2937 !important;
+    opacity: 0.5 !important;
+  }
+
+  /* Toolbar Title */
+  .fc .fc-toolbar-title {
+    color: #fff !important;
+    font-weight: 700 !important;
+  }
+
+  /* Events (The colored blocks) */
+  .fc .fc-event {
+    cursor: pointer !important;
+    padding: 2px 4px !important;
+    border-radius: 4px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    border: none !important;
+  }
+
+  /* Remove default white background from popover */
+  .fc-theme-standard .fc-popover {
+    background-color: #111827 !important;
+    border-color: #1F2937 !important;
+  }
+
+  .fc-theme-standard .fc-popover-header {
+    background-color: #0B0F19 !important;
+    color: #fff !important;
+  }
+}
