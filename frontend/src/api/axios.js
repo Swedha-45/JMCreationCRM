@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a custom instance of axios
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Make sure your backend is running on port 5000
+  baseURL: 'https://jmcreationcrm.onrender.com/api', // Make sure your backend is running on port 5000
   headers: {
     'Content-Type': 'application/json',
   },
