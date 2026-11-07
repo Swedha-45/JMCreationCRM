@@ -16,7 +16,7 @@ const app = express();
 // 4. CORS Configuration (Allows Vercel and Localhost)
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://jmcreationcrm25-lpuu.vercel.app'
+  'https://jmcreationcrm-1.onrender.com'
 ];
 
 app.use(cors({
