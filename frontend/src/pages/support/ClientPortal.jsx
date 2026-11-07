@@ -18,6 +18,7 @@ const ClientPortal = () => {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const [expandedClientIds, setExpandedClientIds] = useState(new Set());
+  const [deletingClientId, setDeletingClientId] = useState(null);
 
   // Modal States
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
@@ -71,6 +72,28 @@ const ClientPortal = () => {
     if (updatedClient?._id) setExpandedClientIds((prev) => new Set(prev).add(updatedClient._id));
   };
 
+  const handleDeleteClient = async (clientId) => {
+    if (!window.confirm("Are you sure you want to delete this client? All associated documents and call logs will also be permanently deleted.")) {
+      return;
+    }
+
+    setDeletingClientId(clientId);
+    try {
+      await api.delete('/clients/' + clientId);
+      setClients((prev) => prev.filter((c) => c._id !== clientId));
+      setExpandedClientIds((prev) => {
+        const next = new Set(prev);
+        next.delete(clientId);
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to delete client", err);
+      alert(err.response?.data?.message || 'Failed to delete client.');
+    } finally {
+      setDeletingClientId(null);
+    }
+  };
+
   const openAddServiceModal = (client, e) => {
     if (e) e.stopPropagation();
     setSelectedClientForService(client);
@@ -113,16 +136,46 @@ const ClientPortal = () => {
           <p className="text-gray-400 text-sm mt-1">Manage clients, services, and generate invoices.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={fetchInitialData} className="p-2.5 bg-surface border border-border rounded-xl text-gray-400 hover:text-white">
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          <button onClick={fetchInitialData} className="p-2.5 bg-surface border border-border rounded-xl text-gray-400 hover:text-white shrink-0 transition-colors">
+            <RefreshCw className={`w-5 h-5 shrink-0 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={() => setIsAddClientOpen(true)} className="px-5 py-2.5 bg-primary text-white font-medium rounded-xl flex items-center gap-2">
-            <Plus size={18} /> Add Client
+          <button onClick={() => setIsAddClientOpen(true)} className="px-5 py-2.5 bg-primary text-white font-medium rounded-xl flex items-center gap-2 shrink-0 hover:bg-primary/90 transition-colors">
+            <Plus size={18} className="shrink-0" /> Add Client
           </button>
         </div>
       </div>
 
       {error && <div className="p-4 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl">{error}</div>}
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full sm:w-80">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 shrink-0 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by company or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-surface border border-border rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div className="flex gap-2 self-start sm:self-auto">
+          {['all', 'pending', 'paid'].map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setFilterStatus(status)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize shrink-0 transition-colors ${
+                filterStatus === status
+                  ? 'bg-primary/20 text-primary border border-primary/40'
+                  : 'bg-surface border border-border text-gray-400 hover:text-white'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Table */}
       <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-xl">
@@ -133,7 +186,7 @@ const ClientPortal = () => {
               <th className="py-4 px-6">Contact</th>
               <th className="py-4 px-6">Services</th>
               <th className="py-4 px-6">Financials</th>
-              <th className="py-4 px-6 text-right">Actions</th>
+              <th className="py-4 px-6 text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -152,6 +205,8 @@ const ClientPortal = () => {
                   onToggleDetails={() => toggleClientDetails(client._id)}
                   onOpenInvoiceModal={(service) => openInvoiceModal(client, service)}
                   onOpenAddService={() => openAddServiceModal(client)}
+                  onDeleteClient={() => handleDeleteClient(client._id)}
+                  isDeletingClient={deletingClientId === client._id}
                 />
               );
             })}
@@ -195,6 +250,8 @@ const ClientTableRow = ({
   onToggleDetails,
   onOpenInvoiceModal,
   onOpenAddService,
+  onDeleteClient,
+  isDeletingClient,
 }) => {
   const services = Array.isArray(client.services) ? client.services : [];
   const [documents, setDocuments] = useState([]);
@@ -331,7 +388,7 @@ const ClientTableRow = ({
       <tr className={`hover:bg-white/[0.02] transition-colors ${isExpanded ? 'bg-white/[0.02]' : ''}`}>
         <td className="py-4 px-6">
           <div className="font-semibold text-white flex items-center gap-2">
-            <Building2 size={16} className="text-primary" /> {client.companyName}
+            <Building2 size={16} className="text-primary shrink-0" /> {client.companyName}
           </div>
           <div className="text-xs text-gray-400 mt-0.5">{client.address}</div>
         </td>
@@ -340,7 +397,7 @@ const ClientTableRow = ({
           <div className="text-xs text-gray-400">{client.phone}</div>
         </td>
         <td className="py-4 px-6">
-          <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-xs font-semibold">
+          <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded text-xs font-semibold inline-block shrink-0">
             {fin.serviceCount} Services
           </span>
         </td>
@@ -350,21 +407,36 @@ const ClientTableRow = ({
             <span className="text-amber-400">Pending: ₹{fin.totalPending.toLocaleString('en-IN')}</span>
           </div>
         </td>
-        <td className="py-4 px-6 text-right">
-          <div className="flex items-center justify-end gap-2">
+        <td className="py-4 px-6 text-right whitespace-nowrap">
+          <div className="flex items-center justify-end gap-2 shrink-0">
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); onOpenInvoiceModal(null); }}
-              className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 text-xs font-semibold flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors"
             >
-              <FileText size={14} /> Invoice
+              <FileText size={14} className="shrink-0" /> Invoice
             </button>
 
             <button
+              type="button"
               onClick={onToggleDetails}
-              className="px-3 py-1.5 rounded-lg border border-border bg-background text-gray-300 hover:text-white text-xs flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg border border-border bg-background text-gray-300 hover:text-white text-xs flex items-center gap-1 shrink-0 transition-colors"
             >
               {isExpanded ? 'Hide' : 'Details'}
-              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {isExpanded ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteClient();
+              }}
+              disabled={isDeletingClient}
+              title="Delete Client"
+              className="p-1.5 rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:text-red-300 hover:bg-red-500/20 text-xs flex items-center justify-center shrink-0 transition-colors disabled:opacity-50"
+            >
+              {isDeletingClient ? <Loader2 size={14} className="animate-spin shrink-0" /> : <Trash2 size={14} className="shrink-0" />}
             </button>
           </div>
         </td>
@@ -377,8 +449,8 @@ const ClientTableRow = ({
             {/* SERVICES SECTION */}
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-border/50">
               <h4 className="font-bold text-white text-sm">Services for {client.companyName}</h4>
-              <button onClick={onOpenAddService} className="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold flex items-center gap-1">
-                <Plus size={14} /> Add Service
+              <button onClick={onOpenAddService} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-semibold flex items-center gap-1 shrink-0 transition-colors">
+                <Plus size={14} className="shrink-0" /> Add Service
               </button>
             </div>
 
@@ -387,14 +459,14 @@ const ClientTableRow = ({
                 <div key={i} className="bg-surface border border-border p-4 rounded-xl">
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-semibold text-white">{service.serviceName}</span>
-                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] uppercase">{service.status}</span>
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] uppercase font-semibold shrink-0">{service.status}</span>
                   </div>
                   <div className="text-xs text-gray-400 mb-3">In Charge: <span className="text-white">{service.personInCharge?.name || 'Unassigned'}</span></div>
                   <div className="flex justify-between text-xs mb-3">
                     <span className="text-gray-400">Agreed: ₹{service.agreedPrice?.toLocaleString('en-IN')}</span>
                     <span className="text-emerald-400">Paid: ₹{service.paidAmount?.toLocaleString('en-IN')}</span>
                   </div>
-                  <button onClick={() => onOpenInvoiceModal(service)} className="w-full py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-semibold">
+                  <button onClick={() => onOpenInvoiceModal(service)} className="w-full py-2 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 rounded-lg text-xs font-semibold transition-colors">
                     Generate Invoice
                   </button>
                 </div>
@@ -404,7 +476,7 @@ const ClientTableRow = ({
             {/* SAVED DOCUMENTS / INVOICE HISTORY SECTION */}
             <div className="mt-6 border-t border-border/50 pt-4">
               <h4 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
-                <FileText size={16} className="text-accent" /> Saved Documents & Invoices
+                <FileText size={16} className="text-accent shrink-0" /> Saved Documents & Invoices
               </h4>
 
               {loadingDocs ? (
@@ -420,7 +492,7 @@ const ClientTableRow = ({
                         <th className="p-3">Date</th>
                         <th className="p-3">Template</th>
                         <th className="p-3">Total Amount</th>
-                        <th className="p-3 text-right">Action</th>
+                        <th className="p-3 text-right whitespace-nowrap">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -430,21 +502,21 @@ const ClientTableRow = ({
                           <td className="p-3 text-gray-300">{doc.date}</td>
                           <td className="p-3 text-gray-400 capitalize">{doc.templateType.replace('_', ' ')}</td>
                           <td className="p-3 text-emerald-400 font-bold">₹{doc.totalAmount?.toLocaleString('en-IN')}</td>
-                          <td className="p-3 text-right">
-                            <div className="flex items-center justify-end gap-3">
+                          <td className="p-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-3 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => handleViewPDF(doc)}
                                 disabled={viewingDocId === doc._id}
-                                className="text-primary hover:underline font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                                className="text-primary hover:underline font-semibold flex items-center gap-1.5 shrink-0 disabled:opacity-50"
                               >
                                 {viewingDocId === doc._id ? (
                                   <>
-                                    <Loader2 size={12} className="animate-spin" /> Loading...
+                                    <Loader2 size={12} className="animate-spin shrink-0" /> Loading...
                                   </>
                                 ) : (
                                   <>
-                                    <FileText size={12} /> View PDF
+                                    <FileText size={12} className="shrink-0" /> View PDF
                                   </>
                                 )}
                               </button>
@@ -453,9 +525,9 @@ const ClientTableRow = ({
                                 onClick={() => handleDeleteDocument(doc._id)}
                                 disabled={deletingDocId === doc._id}
                                 title="Delete Document"
-                                className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 shrink-0"
                               >
-                                {deletingDocId === doc._id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                {deletingDocId === doc._id ? <Loader2 size={14} className="animate-spin shrink-0" /> : <Trash2 size={14} className="shrink-0" />}
                               </button>
                             </div>
                           </td>
@@ -471,14 +543,14 @@ const ClientTableRow = ({
             <div className="mt-6 border-t border-border/50 pt-4">
               <div className="flex justify-between items-center mb-3">
                 <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                  <Phone size={16} className="text-primary" /> Call History
+                  <Phone size={16} className="text-primary shrink-0" /> Call History
                 </h4>
                 <button
                   type="button"
                   onClick={() => setIsLogCallOpen((prev) => !prev)}
-                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors"
                 >
-                  <Plus size={14} /> Log Call
+                  <Plus size={14} className="shrink-0" /> Log Call
                 </button>
               </div>
 
@@ -487,21 +559,21 @@ const ClientTableRow = ({
                 <form onSubmit={handleLogCall} className="mb-4 p-4 bg-surface border border-primary/30 rounded-xl space-y-3 animate-in fade-in">
                   <div className="flex justify-between items-center pb-2 border-b border-border/50">
                     <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                      <Phone size={14} className="text-primary" /> Log New Call for {client.companyName}
+                      <Phone size={14} className="text-primary shrink-0" /> Log New Call for {client.companyName}
                     </span>
                     <button
                       type="button"
                       onClick={() => { setIsLogCallOpen(false); setCallError(''); }}
-                      className="text-gray-400 hover:text-white p-1 rounded-lg"
+                      className="text-gray-400 hover:text-white p-1 rounded-lg shrink-0"
                     >
-                      <X size={14} />
+                      <X size={14} className="shrink-0" />
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-medium text-gray-400 mb-1 flex items-center gap-1">
-                        <Calendar size={12} /> Date
+                        <Calendar size={12} className="shrink-0" /> Date
                       </label>
                       <input
                         type="date"
@@ -514,7 +586,7 @@ const ClientTableRow = ({
 
                     <div>
                       <label className="block text-[11px] font-medium text-gray-400 mb-1 flex items-center gap-1">
-                        <Clock size={12} /> Duration
+                        <Clock size={12} className="shrink-0" /> Duration
                       </label>
                       <input
                         type="text"
@@ -529,7 +601,7 @@ const ClientTableRow = ({
 
                   <div>
                     <label className="block text-[11px] font-medium text-gray-400 mb-1 flex items-center gap-1">
-                      <FileText size={12} /> Notes
+                      <FileText size={12} className="shrink-0" /> Notes
                     </label>
                     <textarea
                       required
@@ -551,16 +623,16 @@ const ClientTableRow = ({
                     <button
                       type="button"
                       onClick={() => { setIsLogCallOpen(false); setCallError(''); }}
-                      className="px-3 py-1.5 bg-background border border-border text-gray-300 hover:text-white rounded-lg text-xs"
+                      className="px-3 py-1.5 bg-background border border-border text-gray-300 hover:text-white rounded-lg text-xs shrink-0"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={submittingCall}
-                      className="px-4 py-1.5 bg-primary text-white font-semibold rounded-lg text-xs flex items-center gap-1.5 disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                      className="px-4 py-1.5 bg-primary text-white font-semibold rounded-lg text-xs flex items-center gap-1.5 disabled:opacity-50 hover:bg-primary/90 shrink-0 transition-colors"
                     >
-                      {submittingCall ? <Loader2 size={12} className="animate-spin" /> : <Plus size={14} />}
+                      {submittingCall ? <Loader2 size={12} className="animate-spin shrink-0" /> : <Plus size={14} className="shrink-0" />}
                       {submittingCall ? 'Saving...' : 'Save Call'}
                     </button>
                   </div>
@@ -583,7 +655,7 @@ const ClientTableRow = ({
                         <th className="p-3">Duration</th>
                         <th className="p-3">Notes</th>
                         <th className="p-3">Logged By</th>
-                        <th className="p-3 text-right">Action</th>
+                        <th className="p-3 text-right whitespace-nowrap">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -595,15 +667,15 @@ const ClientTableRow = ({
                           <td className="p-3 text-gray-400 whitespace-nowrap">
                             {call.loggedBy?.name || 'Staff'}
                           </td>
-                          <td className="p-3 text-right">
+                          <td className="p-3 text-right whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => handleDeleteCall(call._id)}
                               disabled={deletingCallId === call._id}
                               title="Delete Call Log"
-                              className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                              className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 shrink-0"
                             >
-                              {deletingCallId === call._id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                              {deletingCallId === call._id ? <Loader2 size={14} className="animate-spin shrink-0" /> : <Trash2 size={14} className="shrink-0" />}
                             </button>
                           </td>
                         </tr>
@@ -634,8 +706,8 @@ const ClientTableRow = ({
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  <FileText className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <FileText className="w-5 h-5 shrink-0" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-base">
@@ -652,16 +724,16 @@ const ClientTableRow = ({
                   href={activePdfModal.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 bg-surface hover:bg-white/10 border border-border rounded-lg text-xs font-medium text-gray-300 hover:text-white flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 bg-surface hover:bg-white/10 border border-border rounded-lg text-xs font-medium text-gray-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-colors"
                 >
-                  <ExternalLink size={14} /> Open in New Tab
+                  <ExternalLink size={14} className="shrink-0" /> Open in New Tab
                 </a>
                 <a
                   href={activePdfModal.url}
                   download={`${activePdfModal.invoiceNo || 'invoice'}.pdf`}
-                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg text-xs font-medium text-primary flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg text-xs font-medium text-primary flex items-center gap-1.5 shrink-0 transition-colors"
                 >
-                  <Download size={14} /> Download
+                  <Download size={14} className="shrink-0" /> Download
                 </a>
                 <button
                   type="button"
@@ -669,9 +741,9 @@ const ClientTableRow = ({
                     window.URL.revokeObjectURL(activePdfModal.url);
                     setActivePdfModal(null);
                   }}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors ml-2"
+                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors ml-2 shrink-0"
                 >
-                  <X size={18} />
+                  <X size={18} className="shrink-0" />
                 </button>
               </div>
             </div>
@@ -690,4 +762,5 @@ const ClientTableRow = ({
     </>
   );
 };
+
 export default ClientPortal;

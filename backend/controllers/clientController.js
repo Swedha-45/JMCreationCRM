@@ -1,4 +1,6 @@
 const Client = require('../models/Client');
+const Document = require('../models/Document');
+const CallLog = require('../models/CallLog');
 
 // @desc    Create a new client
 // @route   POST /api/clients
@@ -67,6 +69,35 @@ exports.addService = async (req, res) => {
     res.status(200).json({
       success: true,
       data: populatedClient || client,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete a client and all associated data (Documents, Call Logs)
+// @route   DELETE /api/clients/:id
+// @access  Private (Director Only)
+exports.deleteClient = async (req, res) => {
+  try {
+    const client = await Client.findById(req.params.id);
+
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    // CRITICAL: Delete all associated data (Documents, Call Logs) before deleting the client
+    await Promise.all([
+      Document.deleteMany({ clientId: req.params.id }),
+      CallLog.deleteMany({ clientId: req.params.id }),
+    ]);
+
+    // Delete the client
+    await Client.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Client and all associated data deleted successfully',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

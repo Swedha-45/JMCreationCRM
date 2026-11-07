@@ -16,6 +16,15 @@ body {
   padding: 0;
 }
 
+/* Ensure all Lucide icons and SVGs do not shrink, collapse, or overlap in flex containers */
+svg,
+svg.lucide {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  min-width: fit-content;
+}
+
 input,
 textarea,
 select {

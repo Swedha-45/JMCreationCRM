@@ -49,9 +49,9 @@ const Sidebar = () => {
   return (
     <div className="w-64 h-screen bg-surface border-r border-border flex flex-col fixed left-0 top-0 z-50">
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-border">
+      <div className="h-16 flex items-center px-6 border-b border-border shrink-0">
         <h1 className="text-lg font-bold text-primary tracking-wider flex items-center gap-2">
-          <Star size={18} className="text-accent" fill="currentColor" /> JM CREATIONS
+          <Star size={18} className="text-accent shrink-0" fill="currentColor" /> JM CREATIONS
         </h1>
       </div>
 
@@ -62,8 +62,8 @@ const Sidebar = () => {
             if (!item.roles.includes(user?.role)) return null;
             return (
               <div key={index} className="pt-5 pb-2 px-3 flex justify-between items-center">
-                <span className="text-[10px] font-bold text-gray-500 tracking-wider">{item.group}</span>
-                <ChevronDown size={14} className="text-gray-600" />
+                <span className="text-[10px] font-bold text-gray-500 tracking-wider truncate">{item.group}</span>
+                <ChevronDown size={14} className="text-gray-600 shrink-0" />
               </div>
             );
           }
@@ -81,8 +81,8 @@ const Sidebar = () => {
                 }`
               }
             >
-              {item.icon}
-              <span>{item.name}</span>
+              <span className="shrink-0 flex items-center justify-center">{item.icon}</span>
+              <span className="truncate">{item.name}</span>
             </NavLink>
           );
         })}
@@ -100,8 +100,13 @@ const Sidebar = () => {
               <p className="text-[10px] text-gray-500 capitalize">{user?.role}</p>
             </div>
           </div>
-          <button onClick={logout} className="text-gray-500 hover:text-red-400 transition-colors">
-            <LogOut size={18} />
+          <button
+            type="button"
+            onClick={logout}
+            title="Log Out"
+            className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors shrink-0"
+          >
+            <LogOut size={18} className="shrink-0" />
           </button>
         </div>
       </div>

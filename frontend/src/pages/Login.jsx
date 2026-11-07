@@ -85,14 +85,7 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="mt-6 text-center border-t border-border/50 pt-6">
-          <p className="text-gray-400 text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Register here
-            </Link>
-          </p>
-        </div>
+
 
         <p className="text-center text-gray-500 text-xs mt-6">
           Internal System. Unauthorized access is prohibited.
@@ -103,3 +96,12 @@ const Login = () => {
 };
 
 export default Login;
+
+//<div className="mt-6 text-center border-t border-border/50 pt-6">
+//  <p className="text-gray-400 text-sm">
+//    Don't have an account?{' '}
+//  <Link to="/register" className="text-primary hover:underline font-medium">
+//  Register here
+//</Link>
+//</p>
+//</div>
