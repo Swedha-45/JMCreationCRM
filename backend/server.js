@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
-const connectDB = require('./config/db'); // Import the DB connection
+const connectDB = require('./config/db');
 
 // 1. Load environment variables FIRST
 dotenv.config();
@@ -13,8 +13,26 @@ connectDB();
 // 3. Initialize Express
 const app = express();
 
-// 4. Middleware
-app.use(cors());
+// 4. CORS Configuration (Allows Vercel and Localhost)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://jmcreationcrm25-lpuu.vercel.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, or curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // 5. Test Route
@@ -30,9 +48,15 @@ const userRoutes = require('./routes/userRoutes');
 const testPdfRoute = require('./routes/testPdfRoute');
 const documentRoutes = require('./routes/documentRoutes');
 const callRoutes = require('./routes/callRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+
+// Serve Assets (Logos)
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use('/assets', express.static(path.join(__dirname, '../assets')));
 app.use('/assets', express.static('assets'));
+
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -40,12 +64,13 @@ app.use('/api/users', userRoutes);
 app.use('/api/test-pdf', testPdfRoute);
 app.use('/api/documents', documentRoutes);
 app.use('/api/calls', callRoutes);
-app.use('/api/attendance', require('./routes/attendanceRoutes'));
-// Add this with your other routes
-app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/events', eventRoutes);
 
 // 6. Start the Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+
+// CRITICAL FOR RENDER: Use '0.0.0.0' instead of 'localhost'
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
